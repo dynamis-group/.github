@@ -30,7 +30,7 @@ def test_every_string_is_legible() -> None:
 
 def test_every_svg_is_clean() -> None:
     files = sorted(assets.PUBLIC.glob("*.svg"))
-    assert len(files) == 12
+    assert len(files) == 18
     for path in files:
         text = path.read_text(encoding="utf-8")
         root = ET.fromstring(text)

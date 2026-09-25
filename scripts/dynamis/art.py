@@ -1,5 +1,4 @@
-"""The Dynamis images: the profile banner, the division cards, the call to action and the
-members banner.
+"""The Dynamis images: the profile banner, the division cards and tiles, and the call to action.
 
 Precision first. The only motion is a single hairline that scans the grid and rests; the
 official logos are placed untouched and never move, as the brand requires.
@@ -169,52 +168,121 @@ def banner(tokens: Tokens, theme: Theme, layout: BannerLayout, ledger: Ledger, a
     )
 
 
-CARD_W, CARD_H = 264, 248
+# The three division images sit side by side at a third of the row each, with no space between
+# them, so the row lines up with the banner at any width. Each image carries its share of the
+# gutters: the outer cards sit flush with the banner's edges.
+ROW_W = BANNER_WIDE.width
+CARD_GAP, CARD_H = 16, 248
+# The banner's line box already leaves about 9 px below it; this tops the vertical gap up to the
+# gutter between the cards.
+CARD_TOP = 7
+CARD_W = ROW_W / 3
+CARD_VISIBLE = (ROW_W - 2 * CARD_GAP) / 3
+# On a phone (the README's max-width: 600px sources) the same third of the row is too narrow
+# for a card, so each division becomes a tile: its mark, its name and what it does.
+TILE_GAP, TILE_H = 8, 116
+
+
+def _slot(position: int, gap: float) -> float:
+    """Left edge of the visible card in its image, for the 0th, 1st or 2nd image of the row."""
+    return position * gap / 3
+
+
+def _arrow(cx: float, cy: float, colour: str) -> str:
+    return el(
+        "path",
+        {
+            "d": (
+                f"M{fmt(cx - 5)} {fmt(cy)}H{fmt(cx + 5)}"
+                f"M{fmt(cx + 1)} {fmt(cy - 4)}L{fmt(cx + 5)} {fmt(cy)}"
+                f"L{fmt(cx + 1)} {fmt(cy + 4)}"
+            ),
+            "fill": "none",
+            "stroke": colour,
+            "stroke-width": "1.5",
+            "stroke-linecap": "round",
+            "stroke-linejoin": "round",
+        },
+    )
+
+
+def _card_panel(x: float, width: float, height: float, radius: float, theme: Theme) -> str:
+    return el(
+        "rect", {"x": x, "width": width, "height": height, "rx": radius, "fill": theme.surface}
+    ) + el(
+        "rect",
+        {
+            "x": x + 0.5,
+            "y": 0.5,
+            "width": width - 1,
+            "height": height - 1,
+            "rx": radius - 0.5,
+            "fill": "none",
+            "stroke": theme.line,
+        },
+    )
 
 
 def division_card(
     tokens: Tokens, theme: Theme, index: int, division: Division, ledger: Ledger, asset: str
 ) -> str:
     f = tokens.fonts
+    x0, w = _slot(index - 1, CARD_GAP), CARD_VISIBLE
     c = Canvas(
-        asset, CARD_W, CARD_H, ledger=ledger, bg=theme.surface, min_scale=tokens.min_scale(CARD_W)
+        asset,
+        CARD_W,
+        CARD_TOP + CARD_H,
+        ledger=ledger,
+        bg=theme.surface,
+        min_scale=min(1.0, tokens.desktop_px / ROW_W),
     )
-    c.style("e", f.sans_medium, 12, theme.muted)
+    c.style("e", f.sans_medium, 13, theme.muted)
     c.style("p", f.sans, 15, theme.fg_dim)
     c.style("l", f.sans_medium, 14, theme.fg_dim)
     parts = [
-        _defs(_radial("dg", division.glow, 0.14, CARD_W - 24, -8, 150)),
-        _panel(CARD_W, CARD_H, theme.surface, theme.line),
-        el("rect", {"width": CARD_W, "height": CARD_H, "rx": 16, "fill": "url(#dg)"}),
-        c.tracked(f"{index:02d} / {division.tag.upper()}", 24, 44, "e", 0.14),
+        _defs(_radial("dg", division.glow, 0.14, x0 + w - 24, -8, 150)),
+        _card_panel(x0, w, CARD_H, 16, theme),
+        el("rect", {"x": x0, "width": w, "height": CARD_H, "rx": 16, "fill": "url(#dg)"}),
+        c.tracked(f"{index:02d} / {division.tag.upper()}", x0 + 24, 44, "e", 0.14),
     ]
-    mark, _ = lockup(division.slug, theme, x=24, y=68, mark_h=28, prefix="d")
+    mark, _ = lockup(division.slug, theme, x=x0 + 24, y=68, mark_h=28, prefix="d")
     parts.append(mark)
-    for i, line in enumerate(c.wrap(division.positioning, "p", CARD_W - 48)):
-        parts.append(c.text(line, 24, 136 + i * 22, "p"))
+    for i, line in enumerate(c.wrap(division.positioning, "p", w - 48)):
+        parts.append(c.text(line, x0 + 24, 136 + i * 22, "p"))
     # "Learn more" with the site's round arrow button, bottom right.
-    parts.append(c.text("Learn more", CARD_W - 24 - 32 - 10, 213, "l", anchor="end"))
-    cx, cy = CARD_W - 24 - 16, 208
+    cx, cy = x0 + w - 24 - 16, 208
+    parts.append(c.text("Learn more", cx - 16 - 10, 213, "l", anchor="end"))
     parts.append(
         el("circle", {"cx": cx, "cy": cy, "r": 16, "fill": theme.fg, "fill-opacity": "0.06"})
     )
-    parts.append(
-        el(
-            "path",
-            {
-                "d": (
-                    f"M{fmt(cx - 5)} {fmt(cy)}H{fmt(cx + 5)}"
-                    f"M{fmt(cx + 1)} {fmt(cy - 4)}L{fmt(cx + 5)} {fmt(cy)}"
-                    f"L{fmt(cx + 1)} {fmt(cy + 4)}"
-                ),
-                "fill": "none",
-                "stroke": theme.fg_dim,
-                "stroke-width": "1.5",
-                "stroke-linecap": "round",
-                "stroke-linejoin": "round",
-            },
-        )
-    )
+    parts.append(_arrow(cx, cy, theme.fg_dim))
+    desc = f"{division.name} ({division.tag}): {division.positioning} Learn more at {division.href}"
+    body = el("g", {"transform": f"translate(0 {CARD_TOP})"}, "".join(parts))
+    return c.render(title=division.name, desc=desc, body=body)
+
+
+def division_tile(
+    tokens: Tokens, theme: Theme, index: int, division: Division, ledger: Ledger, asset: str
+) -> str:
+    """The phone version of a division card: a third of a 324 px row, drawn at 1:1."""
+    f = tokens.fonts
+    width = tokens.mobile_px / 3
+    visible = (tokens.mobile_px - 2 * TILE_GAP) / 3
+    x0 = _slot(index - 1, TILE_GAP)
+    c = Canvas(asset, width, TILE_H, ledger=ledger, bg=theme.surface, min_scale=1)
+    c.style("n", f.sans_medium, 15, theme.fg)
+    c.style("t", f.sans, 12, theme.muted)
+    parts = [
+        _defs(_radial("dg", division.glow, 0.16, x0 + visible - 8, -8, 90)),
+        _card_panel(x0, visible, TILE_H, 12, theme),
+        el("rect", {"x": x0, "width": visible, "height": TILE_H, "rx": 12, "fill": "url(#dg)"}),
+    ]
+    mark, _ = logos.place(logos.mark_name(division.slug), x=x0 + 12, y=14, height=22, prefix="t")
+    parts.append(mark)
+    parts.append(_arrow(x0 + visible - 18, 25, theme.fg_dim))
+    parts.append(c.text(division.name.removeprefix("Dynamis "), x0 + 12, 66, "n"))
+    for i, line in enumerate(c.wrap(division.tag, "t", visible - 24)):
+        parts.append(c.text(line, x0 + 12, 86 + i * 15, "t"))
     desc = f"{division.name} ({division.tag}): {division.positioning} Learn more at {division.href}"
     return c.render(title=division.name, desc=desc, body="".join(parts))
 
@@ -248,25 +316,3 @@ def cta(tokens: Tokens, theme: Theme, ledger: Ledger, asset: str) -> str:
         ),
     ]
     return c.render(title=label, desc="Get in touch with Dynamis Group.", body="".join(parts))
-
-
-def members_banner(tokens: Tokens, theme: Theme, compact: bool, ledger: Ledger, asset: str) -> str:
-    f = tokens.fonts
-    w, h = (400, 136) if compact else (880, 136)
-    scale = tokens.min_scale(w) if compact else 1.0
-    c = Canvas(asset, w, h, ledger=ledger, bg=theme.bg, min_scale=scale)
-    c.style("k", f.mono, 15 if compact else 13, theme.muted)
-    c.style("t", f.sans, 16 if compact else 17, theme.fg_dim)
-    pad = 24 if compact else 40
-    parts = [
-        _defs(_radial("gl", theme.brand, 0.14, w * 0.8, -30, w * 0.45)),
-        _panel(w, h, theme.bg, theme.line),
-        el("rect", {"width": w, "height": h, "rx": 16, "fill": "url(#gl)"}),
-    ]
-    mark, _ = lockup("group", theme, x=pad, y=32, mark_h=32, prefix="g")
-    parts.append(mark)
-    parts.append(c.text("MEMBERS ONLY", w - pad, 52, "k", anchor="end"))
-    parts.append(c.text("Links and house rules for the team.", pad, 104, "t"))
-    return c.render(
-        title="Dynamis Group, members", desc="Dynamis Group members banner.", body="".join(parts)
-    )

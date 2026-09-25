@@ -30,20 +30,20 @@ def build_public() -> tuple[dict[Path, str], Ledger]:
         for index, division in enumerate(TOKENS.divisions, start=1):
             rel = f"{division.slug}-{name}.svg"
             out[PUBLIC / rel] = art.division_card(TOKENS, theme, index, division, ledger, rel)
+            rel = f"{division.slug}-{name}-compact.svg"
+            out[PUBLIC / rel] = art.division_tile(TOKENS, theme, index, division, ledger, rel)
         out[PUBLIC / f"contact-{name}.svg"] = art.cta(TOKENS, theme, ledger, f"contact-{name}.svg")
     return out, ledger
 
 
 def build_private(target: Path) -> tuple[dict[Path, str], Ledger]:
+    """The members-only profile opens with the same banner as the public one."""
     ledger = Ledger()
     out: dict[Path, str] = {}
     for name, theme in sorted(TOKENS.themes.items()):
-        out[target / f"members-{name}.svg"] = art.members_banner(
-            TOKENS, theme, False, ledger, f"members-{name}.svg"
-        )
-        out[target / f"members-{name}-compact.svg"] = art.members_banner(
-            TOKENS, theme, True, ledger, f"members-{name}-compact.svg"
-        )
+        for layout, suffix in ((art.BANNER_WIDE, ""), (art.BANNER_COMPACT, "-compact")):
+            rel = f"banner-{name}{suffix}.svg"
+            out[target / rel] = art.banner(TOKENS, theme, layout, ledger, rel)
     return out, ledger
 
 

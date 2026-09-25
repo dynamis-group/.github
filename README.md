@@ -24,7 +24,12 @@ uv run pytest && uv run ruff check && uv run mypy
 ```
 
 When `dynamis-group/.github-private` is checked out next to this repository, the same build
-writes the members-only banner into it (`--private DIR` points it somewhere else).
+writes the banner into it too, because the members-only profile opens with the public one
+(`--private DIR` points it somewhere else).
+
+The three division cards are each a third of the banner's width, gutters included, and sit side
+by side with no space between them, so the row lines up with the banner at any width. On a
+phone they switch to compact tiles drawn for a third of a 324 px row.
 
 The build refuses text that fails WCAG AA contrast, or that would render smaller than 12 px on
 a phone. Every image is checked for a `viewBox`, a title and description, no external

@@ -10,9 +10,10 @@
 
     uv run scripts/build_assets.py                 # write profile/assets/
     uv run scripts/build_assets.py --check         # fail if profile/assets/ is stale
-    uv run scripts/build_assets.py --private DIR   # also build the members-only banner into DIR
+    uv run scripts/build_assets.py --private DIR   # also build the members-only profile's banner
 
-The members banner defaults to ../.github-private/profile/assets when that checkout exists.
+The members-only profile (dynamis-group/.github-private) opens with the public banner; its copy
+goes to ../.github-private/profile/assets when that checkout exists.
 The build refuses text that fails WCAG AA or renders below the minimum size.
 """
 
@@ -30,7 +31,7 @@ from dynamis import assets
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=(__doc__ or "").splitlines()[0])
     parser.add_argument("--check", action="store_true", help="verify instead of writing")
-    parser.add_argument("--private", type=Path, help="folder for the members-only banner")
+    parser.add_argument("--private", type=Path, help="folder for the members-only profile's banner")
     args = parser.parse_args(argv)
 
     built, ledger = assets.build_public()
