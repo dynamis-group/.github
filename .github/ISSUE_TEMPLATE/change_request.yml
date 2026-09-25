@@ -1,0 +1,23 @@
+name: Change request
+description: Ask for a change to how something works, reads or looks.
+labels: [enhancement]
+body:
+  - type: textarea
+    id: change
+    attributes:
+      label: What should change?
+      description: Describe the change itself. Screenshots or examples help.
+    validations:
+      required: true
+  - type: textarea
+    id: why
+    attributes:
+      label: Why
+      description: The problem it solves, or who needs it and for what.
+    validations:
+      required: true
+  - type: textarea
+    id: done
+    attributes:
+      label: How we'll know it's done
+      description: Acceptance criteria, as a short list.

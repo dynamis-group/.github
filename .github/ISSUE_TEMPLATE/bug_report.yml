@@ -1,0 +1,44 @@
+name: Bug report
+description: Something in a Dynamis repository doesn't behave the way it should.
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Leave out passwords, keys, personal data and client names. Security problems go
+        through the security policy instead of an issue.
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened?
+      description: What you did, what you expected, and what happened instead.
+    validations:
+      required: true
+  - type: textarea
+    id: reproduce
+    attributes:
+      label: Steps to reproduce
+      description: Numbered steps, or the exact commands.
+    validations:
+      required: true
+  - type: dropdown
+    id: where
+    attributes:
+      label: Where
+      options:
+        - Production
+        - Staging or a preview deployment
+        - Local development
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: Version, commit or deployment
+      placeholder: e.g. a commit SHA or a release tag
+  - type: textarea
+    id: logs
+    attributes:
+      label: Error output
+      description: Paste the error or stack trace, with anything sensitive removed.
+      render: text
