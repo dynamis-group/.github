@@ -9,7 +9,7 @@ doesn't have its own.
 | `profile/assets/` | The profile's images. They're generated, so don't edit them by hand. |
 | `CONTRIBUTING.md`, `SECURITY.md` | The default contributing guide and security policy. |
 | `.github/ISSUE_TEMPLATE/`, `.github/PULL_REQUEST_TEMPLATE.md` | Default issue forms and pull request template. |
-| `design/` | Brand tokens, fonts and the official logos the images are built from. |
+| `design/` | Brand tokens, fonts, the official logos and the website's icons the images are built from. |
 | `scripts/`, `tests/` | The image build and the checks that keep it honest. |
 
 ## Rebuilding the images
@@ -52,3 +52,7 @@ reduced-motion fallback.
 - The logos in `design/logos/source/` are the official files. `design/logos/svgo.config.mjs`
   strips editor metadata and unused ids without touching geometry (a test compares every path,
   shape and gradient), and the images nest them unchanged. Never redraw a logo.
+- The icons in `design/icons/` are the website's pillar glyphs, copied unchanged from
+  `src/components/division/PillarIcon.astro` with the wrapper that component renders (24 px
+  grid, 1.5 stroke, round caps). The images nest them unchanged, in the site's icon tile, and
+  set only their colour. Add an icon by copying it from the site, never by drawing one here.

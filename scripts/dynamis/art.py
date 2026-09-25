@@ -8,11 +8,12 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
+from svgkit import fonts
 from svgkit.canvas import Canvas
 from svgkit.color import Ledger
 from svgkit.svg import el, fmt
 
-from . import logos
+from . import icons, logos
 from .theme import Division, Repository, Theme, Tokens
 
 
@@ -293,10 +294,39 @@ def _fits(c: Canvas, content: str, style: str, width: float) -> None:
         raise ValueError(f"{c.asset}: {content!r} is wider than {fmt(width)} px")
 
 
+def _icon_tile(name: str, theme: Theme, *, x: float, y: float, size: float, glyph: float) -> str:
+    """A glyph in the website's icon tile: surface-2, a hairline border, the glyph in fg-dim."""
+    radius = size / 5  # the site's rounded-lg: 8 px on its 40 px tile
+    inset = (size - glyph) / 2
+    return (
+        el(
+            "rect",
+            {"x": x, "y": y, "width": size, "height": size, "rx": radius, "fill": theme.surface_2},
+        )
+        + el(
+            "rect",
+            {
+                "x": x + 0.5,
+                "y": y + 0.5,
+                "width": size - 1,
+                "height": size - 1,
+                "rx": radius - 0.5,
+                "fill": "none",
+                "stroke": theme.line,
+            },
+        )
+        + icons.place(name, x=x + inset, y=y + inset, size=glyph, colour=theme.fg_dim)
+    )
+
+
 def repository_card(
     tokens: Tokens, theme: Theme, index: int, repo: Repository, ledger: Ledger, asset: str
 ) -> str:
-    """A members-only card for one repository, on the same grid as the division cards."""
+    """A members-only card for one repository, on the same grid as the division cards.
+
+    The repository's glyph and name sit where a division card has its logo lockup, in the
+    website's icon tile.
+    """
     f = tokens.fonts
     x0, w = _slot(index - 1, CARD_GAP), CARD_VISIBLE
     c = Canvas(
@@ -308,23 +338,27 @@ def repository_card(
         min_scale=min(1.0, tokens.desktop_px / ROW_W),
     )
     c.style("e", f.sans_medium, 13, theme.muted)
-    c.style("n", f.mono, 24, theme.fg)
-    c.style("p", f.sans, 15, theme.fg_dim)
-    c.style("s", f.mono, 13, theme.muted)
+    c.style("n", f.mono, 20, theme.fg)
+    c.style("p", f.sans, 14, theme.fg_dim)
+    c.style("s", f.mono, 12.5, theme.muted)
+    tile, top = 40, 60
+    name_x = x0 + 24 + tile + 12
+    name_y = top + tile / 2 + fonts.cap_height(f.mono, 20) / 2
     parts = [
         _defs(_radial("dg", theme.brand, 0.12, x0 + w - 24, -8, 150)),
         _card_panel(x0, w, CARD_H, 16, theme),
         el("rect", {"x": x0, "width": w, "height": CARD_H, "rx": 16, "fill": "url(#dg)"}),
         c.tracked(f"{index:02d} / {repo.tag.upper()}", x0 + 24, 44, "e", 0.14),
-        c.text(repo.name, x0 + 24, 92, "n"),
+        _icon_tile(repo.icon, theme, x=x0 + 24, y=top, size=tile, glyph=20),
+        c.text(repo.name, name_x, name_y, "n"),
     ]
-    _fits(c, repo.name, "n", w - 48)
+    _fits(c, repo.name, "n", x0 + w - 24 - name_x)
     _fits(c, repo.stack, "s", w - 48 - 32 - 16)
     summary = c.wrap(repo.summary, "p", w - 48)
     if len(summary) > 3:
         raise ValueError(f"{asset}: the summary runs to {len(summary)} lines; keep it to three")
     for i, line in enumerate(summary):
-        parts.append(c.text(line, x0 + 24, 132 + i * 22, "p"))
+        parts.append(c.text(line, x0 + 24, 130 + i * 21, "p"))
     cx, cy = x0 + w - 24 - 16, 208
     parts.append(c.text(repo.stack, x0 + 24, 212, "s"))
     parts.append(
@@ -339,20 +373,19 @@ def repository_card(
 def repository_tile(
     tokens: Tokens, theme: Theme, index: int, repo: Repository, ledger: Ledger, asset: str
 ) -> str:
-    """The phone version of a repository card, drawn like the division tiles."""
+    """The phone version of a repository card: its glyph, name and focus, like a division tile."""
     f = tokens.fonts
     width = tokens.mobile_px / 3
     visible = (tokens.mobile_px - 2 * TILE_GAP) / 3
     x0 = _slot(index - 1, TILE_GAP)
     c = Canvas(asset, width, TILE_H, ledger=ledger, bg=theme.surface, min_scale=1)
-    c.style("i", f.mono, 12, theme.muted)
     c.style("n", f.mono, 13, theme.fg)
     c.style("t", f.sans, 12, theme.muted)
     parts = [
         _defs(_radial("dg", theme.brand, 0.14, x0 + visible - 8, -8, 90)),
         _card_panel(x0, visible, TILE_H, 12, theme),
         el("rect", {"x": x0, "width": visible, "height": TILE_H, "rx": 12, "fill": "url(#dg)"}),
-        c.text(f"{index:02d}", x0 + 12, 29, "i"),
+        _icon_tile(repo.icon, theme, x=x0 + 12, y=11, size=28, glyph=16),
         _arrow(x0 + visible - 18, 25, theme.fg_dim),
         c.text(repo.name, x0 + 12, 66, "n"),
     ]

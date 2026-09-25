@@ -50,6 +50,7 @@ class Repository:
     summary: str
     stack: str
     href: str
+    icon: str  # a glyph in design/icons
 
 
 @dataclass(frozen=True)
