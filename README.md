@@ -24,16 +24,23 @@ uv run pytest && uv run ruff check && uv run mypy
 ```
 
 When `dynamis-group/.github-private` is checked out next to this repository, the same build
-writes the banner into it too, because the members-only profile opens with the public one
-(`--private DIR` points it somewhere else).
+writes the members-only profile's images into it too: the public banner, then a card and a phone
+tile for each repository listed in that checkout's `design/repositories.json` (`--private DIR`
+points it at a checkout somewhere else). The repository names live only there, so nothing
+internal is named here; the tests use stand-in data from `tests/fixtures/members/`, and
+`tests/test_members.py` checks the real profile whenever the checkout is present.
 
 The three division cards are each a third of the banner's width, gutters included, and sit side
 by side with no space between them, so the row lines up with the banner at any width. On a
 phone they switch to compact tiles drawn for a third of a 324 px row.
 
-The build refuses text that fails WCAG AA contrast, or that would render smaller than 12 px on
-a phone. Every image is checked for a `viewBox`, a title and description, no external
-references, and motion limited to `transform` and `opacity` with a reduced-motion fallback.
+The banner's `<img>` carries `width="100%"`, so it spans the README column like the card row
+below it; without it the banner stops at its natural 880 px on a wider column.
+
+The build refuses text that fails WCAG AA contrast, that would render smaller than 12 px on a
+phone, or that is too wide for its card. Every image is checked for a `viewBox`, a title and
+description, no external references, and motion limited to `transform` and `opacity` with a
+reduced-motion fallback.
 
 ## Where the brand comes from
 

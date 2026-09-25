@@ -1,0 +1,26 @@
+{
+  "note": "Stand-in data for the members-only build, so this public repository's tests never name an internal repository. The real file lives in dynamis-group/.github-private.",
+  "repositories": [
+    {
+      "name": "site-repo",
+      "tag": "Site + portal",
+      "summary": "A stand-in summary long enough to wrap onto a third line of the card.",
+      "stack": "Astro · D1 · Workers",
+      "href": "https://github.com/example/site-repo"
+    },
+    {
+      "name": "infra-repo",
+      "tag": "Infrastructure",
+      "summary": "A short stand-in summary.",
+      "stack": "Frappe · Docker · B2",
+      "href": "https://github.com/example/infra-repo"
+    },
+    {
+      "name": "docs-repo",
+      "tag": "Governance",
+      "summary": "Another stand-in summary, of a middling length.",
+      "stack": "Markdown · Pandoc",
+      "href": "https://github.com/example/docs-repo"
+    }
+  ]
+}

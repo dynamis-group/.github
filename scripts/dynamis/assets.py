@@ -8,13 +8,22 @@ from svgkit.color import Ledger
 from svgkit.svg import write_if_changed
 
 from . import art
-from .theme import ROOT, load
+from .theme import ROOT, load, load_repositories
 
 TOKENS = load()
 PUBLIC = ROOT / "profile" / "assets"
 # The members-only profile lives in dynamis-group/.github-private; build it there when that
-# repository is checked out next to this one.
-PRIVATE_DEFAULT = ROOT.parent / ".github-private" / "profile" / "assets"
+# repository is checked out next to this one. Its repository cards are drawn from its own
+# design/repositories.json, so nothing internal is named in this public repository.
+PRIVATE_DEFAULT = ROOT.parent / ".github-private"
+
+
+def private_assets(checkout: Path) -> Path:
+    return checkout / "profile" / "assets"
+
+
+def private_data(checkout: Path) -> Path:
+    return checkout / "design" / "repositories.json"
 
 
 def build_public() -> tuple[dict[Path, str], Ledger]:
@@ -36,14 +45,21 @@ def build_public() -> tuple[dict[Path, str], Ledger]:
     return out, ledger
 
 
-def build_private(target: Path) -> tuple[dict[Path, str], Ledger]:
-    """The members-only profile opens with the same banner as the public one."""
+def build_private(checkout: Path) -> tuple[dict[Path, str], Ledger]:
+    """The members-only profile: the public banner, then a card for each core repository."""
     ledger = Ledger()
     out: dict[Path, str] = {}
+    target = private_assets(checkout)
+    repositories = load_repositories(private_data(checkout))
     for name, theme in sorted(TOKENS.themes.items()):
         for layout, suffix in ((art.BANNER_WIDE, ""), (art.BANNER_COMPACT, "-compact")):
             rel = f"banner-{name}{suffix}.svg"
             out[target / rel] = art.banner(TOKENS, theme, layout, ledger, rel)
+        for index, repo in enumerate(repositories, start=1):
+            rel = f"{repo.name}-{name}.svg"
+            out[target / rel] = art.repository_card(TOKENS, theme, index, repo, ledger, rel)
+            rel = f"{repo.name}-{name}-compact.svg"
+            out[target / rel] = art.repository_tile(TOKENS, theme, index, repo, ledger, rel)
     return out, ledger
 
 

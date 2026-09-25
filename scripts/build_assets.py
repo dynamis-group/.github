@@ -10,10 +10,11 @@
 
     uv run scripts/build_assets.py                 # write profile/assets/
     uv run scripts/build_assets.py --check         # fail if profile/assets/ is stale
-    uv run scripts/build_assets.py --private DIR   # also build the members-only profile's banner
+    uv run scripts/build_assets.py --private DIR   # also build the members-only profile
 
-The members-only profile (dynamis-group/.github-private) opens with the public banner; its copy
-goes to ../.github-private/profile/assets when that checkout exists.
+The members-only profile (dynamis-group/.github-private) opens with the public banner, followed
+by a card for each core repository, drawn from that checkout's design/repositories.json. It is
+built into ../.github-private/profile/assets whenever that checkout exists.
 The build refuses text that fails WCAG AA or renders below the minimum size.
 """
 
@@ -31,17 +32,17 @@ from dynamis import assets
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=(__doc__ or "").splitlines()[0])
     parser.add_argument("--check", action="store_true", help="verify instead of writing")
-    parser.add_argument("--private", type=Path, help="folder for the members-only profile's banner")
+    parser.add_argument("--private", type=Path, help="checkout of the members-only profile")
     args = parser.parse_args(argv)
 
     built, ledger = assets.build_public()
     targets = [(built, assets.PUBLIC)]
-    sibling = assets.PRIVATE_DEFAULT.parents[1]
-    private = args.private or (assets.PRIVATE_DEFAULT if (sibling / ".git").exists() else None)
+    default = assets.PRIVATE_DEFAULT
+    private = args.private or (default if (default / ".git").exists() else None)
     if private is not None:
         members, members_ledger = assets.build_private(private)
         ledger.entries.extend(members_ledger.entries)
-        targets.append((members, private))
+        targets.append((members, assets.private_assets(private)))
 
     problems = ledger.failures(assets.TOKENS.min_text_px)
     for problem in problems:

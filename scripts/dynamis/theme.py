@@ -42,6 +42,17 @@ class Division:
 
 
 @dataclass(frozen=True)
+class Repository:
+    """A repository card on the members-only profile. The data lives in that repository."""
+
+    name: str
+    tag: str
+    summary: str
+    stack: str
+    href: str
+
+
+@dataclass(frozen=True)
 class Site:
     name: str
     legal_name: str
@@ -102,3 +113,9 @@ def load(path: Path = TOKENS) -> Tokens:
         min_text_px=float(data["layout"]["min_text_px"]),
         loop_s=float(data["motion"]["loop_s"]),
     )
+
+
+def load_repositories(path: Path) -> tuple[Repository, ...]:
+    """The members-only profile's repository cards, from its design/repositories.json."""
+    data = json.loads(path.read_text(encoding="utf-8"))
+    return tuple(Repository(**r) for r in data["repositories"])

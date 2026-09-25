@@ -6,9 +6,12 @@ profile reuses the public banner, so its copy must match the public images exact
 
 from __future__ import annotations
 
-from pathlib import Path
+import dataclasses
 
+import pytest
+from conftest import MEMBERS_FIXTURE
 from dynamis import art, assets
+from dynamis.theme import load_repositories
 from svgkit.color import Ledger
 
 
@@ -31,12 +34,47 @@ def test_public_renderers_match_the_committed_images() -> None:
         assert art.cta(assets.TOKENS, theme, Ledger(), "c") == committed(f"contact-{name}.svg")
 
 
-def test_members_profile_opens_with_the_public_banner(tmp_path: Path) -> None:
-    built, _ = assets.build_private(tmp_path)
-    names = {path.name for path in built}
-    assert names == {f"banner-{t}{s}.svg" for t in ("dark", "light") for s in ("", "-compact")}
-    for path, content in built.items():
-        assert content == committed(path.name), path.name
+def test_members_profile_opens_with_the_public_banner() -> None:
+    built, _ = assets.build_private(MEMBERS_FIXTURE)
+    banners = {path.name: content for path, content in built.items() if "banner" in path.name}
+    expected = {f"banner-{t}{s}.svg" for t in ("dark", "light") for s in ("", "-compact")}
+    assert set(banners) == expected
+    for name, content in banners.items():
+        assert content == committed(name), name
+
+
+def test_members_profile_has_a_card_and_a_tile_per_repository() -> None:
+    built, _ = assets.build_private(MEMBERS_FIXTURE)
+    names = {path.name for path in built if "banner" not in path.name}
+    repos = load_repositories(assets.private_data(MEMBERS_FIXTURE))
+    assert names == {
+        f"{r.name}-{t}{s}.svg" for r in repos for t in ("dark", "light") for s in ("", "-compact")
+    }
+    assert all(path.parent == assets.private_assets(MEMBERS_FIXTURE) for path in built)
+
+
+def test_repository_text_that_would_overflow_is_refused() -> None:
+    theme = assets.TOKENS.themes["dark"]
+    repo = load_repositories(assets.private_data(MEMBERS_FIXTURE))[0]
+    long_name = dataclasses.replace(repo, name="a-repository-name-far-too-long")
+    with pytest.raises(ValueError, match="wider than"):
+        art.repository_card(assets.TOKENS, theme, 1, long_name, Ledger(), "c")
+    with pytest.raises(ValueError, match="wider than"):
+        art.repository_tile(assets.TOKENS, theme, 1, long_name, Ledger(), "t")
+    long_stack = dataclasses.replace(repo, stack="Astro · D1 · Workers · KV · R2 · Queues")
+    with pytest.raises(ValueError, match="wider than"):
+        art.repository_card(assets.TOKENS, theme, 1, long_stack, Ledger(), "c")
+    long_summary = dataclasses.replace(repo, summary=" ".join([repo.summary] * 3))
+    with pytest.raises(ValueError, match="keep it to three"):
+        art.repository_card(assets.TOKENS, theme, 1, long_summary, Ledger(), "c")
+
+
+def test_the_banner_spans_the_readme_column() -> None:
+    """Without a width the banner stops at 880 px while the 33.33% cards below it stretch."""
+    text = (assets.PUBLIC.parent / "README.md").read_text(encoding="utf-8")
+    assert '<img alt="Dynamis Group.' in text
+    banner = next(line for line in text.splitlines() if 'src="assets/banner-light.svg"' in line)
+    assert 'width="100%"' in banner
 
 
 def test_the_division_row_spans_the_banner() -> None:

@@ -5,6 +5,7 @@ from __future__ import annotations
 import re
 import xml.etree.ElementTree as ET
 
+from conftest import MEMBERS_FIXTURE
 from dynamis import assets
 
 SVG = "{http://www.w3.org/2000/svg}"
@@ -22,7 +23,7 @@ def test_build_is_deterministic() -> None:
 
 
 def test_every_string_is_legible() -> None:
-    for build in (assets.build_public, lambda: assets.build_private(assets.PUBLIC)):
+    for build in (assets.build_public, lambda: assets.build_private(MEMBERS_FIXTURE)):
         _, ledger = build()
         assert ledger.entries
         assert ledger.failures(assets.TOKENS.min_text_px) == []

@@ -13,7 +13,7 @@ from svgkit.color import Ledger
 from svgkit.svg import el, fmt
 
 from . import logos
-from .theme import Division, Theme, Tokens
+from .theme import Division, Repository, Theme, Tokens
 
 
 def _defs(*items: str) -> str:
@@ -285,6 +285,82 @@ def division_tile(
         parts.append(c.text(line, x0 + 12, 86 + i * 15, "t"))
     desc = f"{division.name} ({division.tag}): {division.positioning} Learn more at {division.href}"
     return c.render(title=division.name, desc=desc, body="".join(parts))
+
+
+def _fits(c: Canvas, content: str, style: str, width: float) -> None:
+    """Refuse data-driven text that would overflow its card rather than clip it."""
+    if c.measure(content, style) > width:
+        raise ValueError(f"{c.asset}: {content!r} is wider than {fmt(width)} px")
+
+
+def repository_card(
+    tokens: Tokens, theme: Theme, index: int, repo: Repository, ledger: Ledger, asset: str
+) -> str:
+    """A members-only card for one repository, on the same grid as the division cards."""
+    f = tokens.fonts
+    x0, w = _slot(index - 1, CARD_GAP), CARD_VISIBLE
+    c = Canvas(
+        asset,
+        CARD_W,
+        CARD_TOP + CARD_H,
+        ledger=ledger,
+        bg=theme.surface,
+        min_scale=min(1.0, tokens.desktop_px / ROW_W),
+    )
+    c.style("e", f.sans_medium, 13, theme.muted)
+    c.style("n", f.mono, 24, theme.fg)
+    c.style("p", f.sans, 15, theme.fg_dim)
+    c.style("s", f.mono, 13, theme.muted)
+    parts = [
+        _defs(_radial("dg", theme.brand, 0.12, x0 + w - 24, -8, 150)),
+        _card_panel(x0, w, CARD_H, 16, theme),
+        el("rect", {"x": x0, "width": w, "height": CARD_H, "rx": 16, "fill": "url(#dg)"}),
+        c.tracked(f"{index:02d} / {repo.tag.upper()}", x0 + 24, 44, "e", 0.14),
+        c.text(repo.name, x0 + 24, 92, "n"),
+    ]
+    _fits(c, repo.name, "n", w - 48)
+    _fits(c, repo.stack, "s", w - 48 - 32 - 16)
+    summary = c.wrap(repo.summary, "p", w - 48)
+    if len(summary) > 3:
+        raise ValueError(f"{asset}: the summary runs to {len(summary)} lines; keep it to three")
+    for i, line in enumerate(summary):
+        parts.append(c.text(line, x0 + 24, 132 + i * 22, "p"))
+    cx, cy = x0 + w - 24 - 16, 208
+    parts.append(c.text(repo.stack, x0 + 24, 212, "s"))
+    parts.append(
+        el("circle", {"cx": cx, "cy": cy, "r": 16, "fill": theme.fg, "fill-opacity": "0.06"})
+    )
+    parts.append(_arrow(cx, cy, theme.fg_dim))
+    desc = f"{repo.name} ({repo.tag}): {repo.summary} Built with {repo.stack}. Open {repo.href}"
+    body = el("g", {"transform": f"translate(0 {CARD_TOP})"}, "".join(parts))
+    return c.render(title=repo.name, desc=desc, body=body)
+
+
+def repository_tile(
+    tokens: Tokens, theme: Theme, index: int, repo: Repository, ledger: Ledger, asset: str
+) -> str:
+    """The phone version of a repository card, drawn like the division tiles."""
+    f = tokens.fonts
+    width = tokens.mobile_px / 3
+    visible = (tokens.mobile_px - 2 * TILE_GAP) / 3
+    x0 = _slot(index - 1, TILE_GAP)
+    c = Canvas(asset, width, TILE_H, ledger=ledger, bg=theme.surface, min_scale=1)
+    c.style("i", f.mono, 12, theme.muted)
+    c.style("n", f.mono, 13, theme.fg)
+    c.style("t", f.sans, 12, theme.muted)
+    parts = [
+        _defs(_radial("dg", theme.brand, 0.14, x0 + visible - 8, -8, 90)),
+        _card_panel(x0, visible, TILE_H, 12, theme),
+        el("rect", {"x": x0, "width": visible, "height": TILE_H, "rx": 12, "fill": "url(#dg)"}),
+        c.text(f"{index:02d}", x0 + 12, 29, "i"),
+        _arrow(x0 + visible - 18, 25, theme.fg_dim),
+        c.text(repo.name, x0 + 12, 66, "n"),
+    ]
+    _fits(c, repo.name, "n", visible - 24)
+    for i, line in enumerate(c.wrap(repo.tag, "t", visible - 24)):
+        parts.append(c.text(line, x0 + 12, 86 + i * 15, "t"))
+    desc = f"{repo.name} ({repo.tag}): {repo.summary} Open {repo.href}"
+    return c.render(title=repo.name, desc=desc, body="".join(parts))
 
 
 CTA_W, CTA_H = 176, 48
